@@ -1,11 +1,11 @@
 # boda-ericssoncnaiparser
-Converts Ericsson 2G CNAI Configuration Profile dumps  into csv.
+Converts Ericsson 2G CNAI Configuration Profile dumps  into csv. The parser generates a separate csv file for each domain encountered in the file.
 
 #Usage
 java -jar  boda-ericssoncnaiparser.jar cnai_cp.dmp outputDirectory
 
 #Download and installation
-The lastest compiled jar file is availabled in the dist directory or get it [here](https://github.com/boda-stage/boda-ericssoncnaiparser/blob/master/dist/boda-ericssoncnaiparser.jar).
+The lastest compiled jar file is availabled in the dist directory or get it [here](https://github.com/boda-stage/boda-ericssoncnaiparser/raw/master/dist/boda-ericssoncnaiparser.jar).
 
 #Requirements
 To run the jar file, you need Java version 1.6 and above.

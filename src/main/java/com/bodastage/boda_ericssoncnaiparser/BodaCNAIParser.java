@@ -323,7 +323,7 @@ public class BodaCNAIParser
      */
     static public void showHelp(){
         System.out.println("boda-ericcsoncnaiparser 1.0.0. Copyright (c) 2016 Bodastage(http://www.bodastage.com)");
-        System.out.println("Parses Ericsson CNAI dumps to csv.");
+        System.out.println("Parses Ericsson CNAI CP dumps to csv.");
         System.out.println("Usage: java -jar boda-ericssoncnaiparser.jar <fileToParse.dmp> <outputDirectory>");
     }
     
