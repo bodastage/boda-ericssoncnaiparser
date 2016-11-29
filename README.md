@@ -1,3 +1,5 @@
+![Build status](https://api.travis-ci.org/bodastage/boda-ericssoncnaiparser.svg?branch=master)
+
 # boda-ericssoncnaiparser
 Converts Ericsson 2G CNAI Configuration Profile dumps  into csv. The parser generates a separate csv file for each domain encountered in the file.
 
