@@ -183,8 +183,10 @@ public class BodaCNAIParser
                 paramNames = paramNames +",capabilities";
                 paramValues = paramValues + "," + capabilities;      
 
-                //add domain
-                paramNames = paramNames +",utctime";
+                //add utctime
+                //@TODO: Add mapping from configuration file
+                //for now call this varDateTime
+                paramNames = paramNames +",varDateTime";
                 paramValues = paramValues + "," + creationDateTime;    
                 
                 //add Subnetwork
@@ -409,7 +411,7 @@ public class BodaCNAIParser
         }
         domainPWMap.clear();
         
-    }    
+    }
     
     /**
      * Get file base name.
