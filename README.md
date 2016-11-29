@@ -20,4 +20,4 @@ To report issues with the application or request new features use the issue [tra
 For any other concerns apart from issues and feature requests, send an email to info@bodastage.com.
 
 #Licence
-This project is licensed under Apache 2.0. See LICENCE.md for details.
+This project is licensed under Apache 2.0. See LICENCE file for details.
