@@ -51,6 +51,13 @@ public class BodaCNAIParser
     static String subnetwork;
     
     /**
+     * The entity identifier.
+     * 
+     * @since 1.0.1
+     */
+    static String set;
+    
+    /**
      * The domain value.
      * 
      */
@@ -173,6 +180,8 @@ public class BodaCNAIParser
         
         //If a ".set " is encounted, 
         if(line.contains(".set ")){
+            
+            set = line.replace(".set ", "");
         
             //Write parameter s from previous network entity to domain csv file.
             if( domainParameterList.size() > 1 ){
@@ -195,7 +204,11 @@ public class BodaCNAIParser
                 
                 //add domain
                 paramNames = paramNames +",domain";
-                paramValues = paramValues + "," + domain;       
+                paramValues = paramValues + "," + domain;  
+                
+                //add set
+                paramNames = paramNames +",set";
+                paramValues = paramValues + "," + set;  
                 
                 if(domainHeaderAdded.get(domain)== true){
                     Stack<String> dk = domainColumnHeaders.get(domain);
