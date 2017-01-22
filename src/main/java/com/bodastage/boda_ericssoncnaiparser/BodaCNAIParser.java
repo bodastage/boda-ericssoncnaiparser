@@ -56,6 +56,13 @@ public class BodaCNAIParser
      * @since 1.0.1
      */
     static String set;
+
+    /**
+     * The previous set value
+     * 
+     * @since 1.0.1
+     */
+    static String prevSet;
     
     /**
      * The domain value.
@@ -179,10 +186,10 @@ public class BodaCNAIParser
         }        
         
         //If a ".set " is encounted, 
-        if(line.contains(".set ")){
-            
+        if(line.contains(".set ")){            
+            prevSet = set;
             set = line.replace(".set ", "");
-        
+
             //Write parameter s from previous network entity to domain csv file.
             if( domainParameterList.size() > 1 ){
                 String paramNames = "FileName";
@@ -208,7 +215,7 @@ public class BodaCNAIParser
                 
                 //add set
                 paramNames = paramNames +",set";
-                paramValues = paramValues + "," + set;  
+                paramValues = paramValues + "," + prevSet;  
                 
                 if(domainHeaderAdded.get(domain)== true){
                     Stack<String> dk = domainColumnHeaders.get(domain);
@@ -216,12 +223,14 @@ public class BodaCNAIParser
                         String pName = dk.get(i).toString();
                         String pValue = "";
                         
+                        if(pName.equals("set")) continue;
+                        
                         if(domainParameterList.containsKey(pName) ){
                             //continue; //skip parameters
                             pValue= toCSVFormat(domainParameterList.get(pName));
                         }
                         
-
+                        
                         paramNames = paramNames + "," + pName;
                         paramValues = paramValues + "," + pValue;                           
                     }
@@ -234,7 +243,7 @@ public class BodaCNAIParser
 
                         String pValue = toCSVFormat(dp.getValue());
                         String pName = dp.getKey();
-
+                        
                         paramNames = paramNames + "," + pName;
                         paramValues = paramValues + "," + pValue;
                     }
@@ -263,7 +272,7 @@ public class BodaCNAIParser
                     domainHeaderAdded.put(domain,true);
                     
                 }
-                
+               
                 //Add the parameter values
                 pw.println(paramValues);   
                 
@@ -326,6 +335,10 @@ public class BodaCNAIParser
         if ( paramValuePair.length != 2 ){
             System.out.println("line:" + line );
             return;
+        }
+        
+        if(paramValuePair[0].equals("set")){
+            System.out.println(line);
         }
         domainParameterList.put(paramValuePair[0], paramValuePair[1]);
 
