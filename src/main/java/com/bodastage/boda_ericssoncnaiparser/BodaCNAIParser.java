@@ -4,7 +4,12 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.Calendar;
 import java.util.Date;
@@ -14,6 +19,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Stack;
+import javax.xml.stream.XMLStreamException;
 
 /**
  * Ericsson CNAI dump parser.
@@ -118,6 +124,12 @@ public class BodaCNAIParser
     static Map<String, Boolean> domainHeaderAdded 
             = new LinkedHashMap<String, Boolean>();
     
+    static String dataSource;
+    static String fileName;
+    static int parserState = ParserStates.EXTRACTING_VALUES;
+    static String baseFileName;
+    static String dataFile;
+    static String parameterFile = null;
     
     /**
      * The list of parameters to extract for each domain.
@@ -127,12 +139,15 @@ public class BodaCNAIParser
     static Map<String,Stack> domainColumnHeaders 
             = new LinkedHashMap<String, Stack>();
     
+    public static void setFileName( String fileName ){
+        //this.fileName = fileName;
+    }
     
     public static void main( String[] args )
     {
         try{        
             //show help
-            if(args.length != 2 || (args.length == 1 && args[0] == "-h")){
+            if( (args.length != 2 && args.length != 3) || (args.length == 1 && args[0] == "-h")){
                 showHelp();
                 System.exit(1);
             }
@@ -154,8 +169,18 @@ public class BodaCNAIParser
                 System.exit(1);            
             }
             
+            if(  args.length == 3  ){
+                File f = new File(args[2]);
+                if(f.isFile()){
+                   parameterFile = args[2];
+                   getParametersToExtract(parameterFile);
+                }
+            }
+            
             //Expiry check 
-            Date expiryDate =  new GregorianCalendar(2017, Calendar.NOVEMBER, 01).getTime();
+            //@Remove this 
+            /**
+            Date expiryDate =  new GregorianCalendar(2018, Calendar.FEBRUARY, 01).getTime();
             Date todayDate = new Date();  
             //System.out.println(todayDate);
             //System.out.println(expiryDate);
@@ -163,13 +188,18 @@ public class BodaCNAIParser
                 System.out.println("Parser has expired. Please request new version from www.telecomhall.net");
                 System.exit(1);
             }
+            **/
             
             cnaiExportFile = getFileBasename(filename);
 
-            BufferedReader br = new BufferedReader(new FileReader(filename));
-            for(String line; (line = br.readLine()) != null; ) {
-                processLine(line);
-            }
+            
+            dataSource = filename;
+            processFileOrDirectory(filename);
+            
+//            BufferedReader br = new BufferedReader(new FileReader(filename));
+//            for(String line; (line = br.readLine()) != null; ) {
+//                processLine(line);
+//            }
 
         }catch(Exception e){
             System.err.println("ERROR:" + e.getMessage());
@@ -179,6 +209,101 @@ public class BodaCNAIParser
             
         printExecutionTime();
         closeDomainPWMap();
+    }
+    
+    /**
+     * Extract parameter list from  parameter file
+     * 
+     * @param filename 
+     */
+    public static void getParametersToExtract(String filename) throws FileNotFoundException, IOException{
+        BufferedReader br = new BufferedReader(new FileReader(filename));
+        for(String line; (line = br.readLine()) != null; ) {
+           String [] moAndParameters =  line.split(":");
+           String mo = moAndParameters[0];
+           String [] parameters = moAndParameters[1].split(",");
+           
+           Stack parameterStack = new Stack();
+           for(int i =0; i < parameters.length; i++){
+               parameterStack.push(parameters[i]);
+           }
+            domainColumnHeaders.put(mo, parameterStack);
+            //domainHeaderAdded.put(mo, Boolean.TRUE);
+        }
+        
+        parserState = ParserStates.EXTRACTING_VALUES;
+    }
+    
+    public static void parse(String inputFilename) throws FileNotFoundException, IOException{
+        BufferedReader br = new BufferedReader(new FileReader(inputFilename));
+        for(String line; (line = br.readLine()) != null; ) {
+            processLine(line);
+        }
+    }
+    public static void processFileOrDirectory(String inputPath)
+            throws FileNotFoundException, IOException {
+        //this.dataFILe;
+        Path file = Paths.get(dataSource);
+        boolean isRegularExecutableFile = Files.isRegularFile(file)
+                & Files.isReadable(file);
+
+        boolean isReadableDirectory = Files.isDirectory(file)
+                & Files.isReadable(file);
+
+        if (isRegularExecutableFile) {
+            setFileName(dataSource);
+            dataFile = dataSource;
+            baseFileName =  getFileBasename(dataFile);
+            cnaiExportFile = baseFileName;
+            if( parserState == ParserStates.EXTRACTING_PARAMETERS){
+                System.out.print("Extracting parameters from " + baseFileName + "...");
+            }else{
+                System.out.print("Parsing " + baseFileName + "...");
+            }
+            parse(dataSource);
+            if( parserState == ParserStates.EXTRACTING_PARAMETERS){
+                 System.out.println("Done.");
+            }else{
+                System.out.println("Done.");
+               //System.out.println(this.baseFileName + " successfully parsed.\n");
+            }
+        }
+
+        if (isReadableDirectory) {
+
+            File directory = new File(dataSource);
+
+            //get all the files from a directory
+            File[] fList = directory.listFiles();
+
+            for (File f : fList) {
+                setFileName(f.getAbsolutePath());
+                dataFile = f.getAbsolutePath();
+                try {
+                    baseFileName =  getFileBasename(f.getAbsolutePath());
+                    cnaiExportFile = baseFileName;
+                    if( parserState == ParserStates.EXTRACTING_PARAMETERS){
+                        System.out.print("Extracting parameters from " + baseFileName + "...");
+                    }else{
+                        System.out.print("Parsing " + baseFileName + "...");
+                    }
+                    
+                    //Parse
+                    parse(f.getAbsolutePath());
+                    if( parserState == ParserStates.EXTRACTING_PARAMETERS){
+                         System.out.println("Done.");
+                    }else{
+                        System.out.println("Done.");
+                        //System.out.println(this.baseFileName + " successfully parsed.\n");
+                    }
+                   
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                    System.out.println("Skipping file: " + baseFileName + "\n");
+                }
+            }
+        }
+
     }
     
     /**
@@ -205,12 +330,23 @@ public class BodaCNAIParser
 
             //Write parameter s from previous network entity to domain csv file.
             if( domainParameterList.size() > 1 ){
+                
+                //Skip if domain is not in the parameter file
+                if(parameterFile != null && !domainColumnHeaders.containsKey(domain) ){
+                    domainParameterList.clear();
+                    return;
+                }
+                
                 String paramNames = "FileName";
                 String paramValues = cnaiExportFile;
 
                 //add capabilities
-                paramNames = paramNames +",capabilities";
-                paramValues = paramValues + "," + capabilities;      
+                //When parameter file is present, only add if in parameter list
+                if( parameterFile == null || 
+                        ( parameterFile != null && domainColumnHeaders.get(domain).contains("capabilities"))){
+                    paramNames = paramNames +",capabilities";
+                    paramValues = paramValues + "," + capabilities;                      
+                }
 
                 //add utctime
                 //@TODO: Add mapping from configuration file
@@ -218,28 +354,40 @@ public class BodaCNAIParser
                 paramNames = paramNames +",varDateTime";
                 paramValues = paramValues + "," + creationDateTime;    
                 
+
+                //When parameter file is present, only add if in parameter list
                 //add Subnetwork
-                paramNames = paramNames +",subnetwork";
-                paramValues = paramValues + "," + subnetwork;                                
+                if( parameterFile == null || 
+                        ( parameterFile != null && domainColumnHeaders.get(domain).contains("subnetwork"))){
+                    paramNames = paramNames +",subnetwork";
+                    paramValues = paramValues + "," + subnetwork;                                
+                }
+                
                 
                 //add domain
-                paramNames = paramNames +",domain";
-                paramValues = paramValues + "," + domain;  
+                if( parameterFile == null || 
+                        ( parameterFile != null && domainColumnHeaders.get(domain).contains("domain"))){
+                    paramNames = paramNames +",domain";
+                    paramValues = paramValues + "," + domain;  
+                }
                 
                 //add set
-                paramNames = paramNames +",set";
-                paramValues = paramValues + "," + prevSet;  
+                if( parameterFile == null || 
+                        ( parameterFile != null && domainColumnHeaders.get(domain).contains("set"))){
+                    paramNames = paramNames +",set";
+                    paramValues = paramValues + "," + prevSet;  
+                }
                 
-                if(domainHeaderAdded.get(domain)== true){
+                if(domainHeaderAdded.get(domain)== true || parameterFile != null){
                     Stack<String> dk = domainColumnHeaders.get(domain);
                     for(int i=0; i < dk.size(); i++ ){
                         String pName = dk.get(i).toString();
                         String pValue = "";
                         
-                        if(pName.equals("set")) continue;
+                        if(pName.equals("set") || pName.equals("domain") || 
+                            pName.equals("subnetwork") || pName.equals("capabilities") ) continue;
                         
                         if(domainParameterList.containsKey(pName) ){
-                            //continue; //skip parameters
                             pValue= toCSVFormat(domainParameterList.get(pName));
                         }
                         
@@ -247,8 +395,8 @@ public class BodaCNAIParser
                         paramNames = paramNames + "," + pName;
                         paramValues = paramValues + "," + pValue;                           
                     }
-                }else{
-                
+                }else {
+
                     Iterator <Map.Entry<String,String>> iter 
                             = domainParameterList.entrySet().iterator();
                     while (iter.hasNext()) {
@@ -265,7 +413,8 @@ public class BodaCNAIParser
                 PrintWriter pw = domainPWMap.get(domain);
                 
                 //Add domain csv file headers
-                if(domainHeaderAdded.get(domain)== false){
+                //If there is no parameter file added
+                if(domainHeaderAdded.get(domain)== false ){
                     
                     //Add the file headers
                     pw.println(paramNames);   
@@ -279,7 +428,12 @@ public class BodaCNAIParser
                     for(int i=5; i<paramArr.length;i++){
                         paramStack.push(paramArr[i]);
                     }
-                    domainColumnHeaders.put(domain,paramStack);
+                    
+                    if(parameterFile == null){
+                        domainColumnHeaders.put(domain,paramStack);
+                    }
+                    
+                    
                     
                     //Mark the headers as added
                     domainHeaderAdded.put(domain,true);
@@ -310,7 +464,10 @@ public class BodaCNAIParser
             //Create domain print writerr
             String domainFile = outputDirectory + File.separatorChar + domain + ".csv";
             try {
-                domainPWMap.put(domain, new PrintWriter(new File(domainFile)));
+                if( parameterFile == null || (parameterFile != null && domainColumnHeaders.containsKey(domain))){
+                    domainPWMap.put(domain, new PrintWriter(new File(domainFile)));
+                }
+                
             } catch (FileNotFoundException e) {
                 //@TODO: Add logger
                 System.err.println(e.getMessage());
@@ -362,9 +519,9 @@ public class BodaCNAIParser
      * @version 1.0.0
      */
     static public void showHelp(){
-        System.out.println("boda-ericcsoncnaiparser 1.0.0. Copyright (c) 2016 Bodastage(http://www.bodastage.com)");
+        System.out.println("boda-ericcsoncnaiparser 1.0.0. Copyright (c) 2017 Bodastage(http://www.bodastage.com)");
         System.out.println("Parses Ericsson CNAI CP dumps to csv.");
-        System.out.println("Usage: java -jar boda-ericssoncnaiparser.jar <fileToParse.dmp> <outputDirectory>");
+        System.out.println("Usage: java -jar boda-ericssoncnaiparser.jar <fileToParse.dmp> <outputDirectory> <configFile>");
     }
     
     /**
