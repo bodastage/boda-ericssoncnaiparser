@@ -16,7 +16,7 @@ To run the jar file, you need Java version 1.8 and above.
 To report issues with the application or request new features use the issue [tracker](https://github.com/boda-stage/boda-ericssoncnaiparser/issues). For help and customizations send an email to info@bodastage.com.
 
 # Credits
-[Bodastage](http://bodastage.com)  (info@bodastage.com)
+[Bodastage Solutions](http://bodastage.com)  (info@bodastage.com)
 
 # Contact
 For any other concerns apart from issues and feature requests, send an email to info@bodastage.com.
