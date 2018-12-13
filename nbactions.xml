@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+        <action>
+            <actionName>CUSTOM-package</actionName>
+            <displayName>package</displayName>
+            <goals>
+                <goal>package</goal>
+            </goals>
+        </action>
+        <action>
+            <actionName>CUSTOM-clean compile assembly:single</actionName>
+            <displayName>clean compile assembly:single</displayName>
+            <goals>
+                <goal>clean</goal>
+                <goal>compile</goal>
+                <goal>assembly:single</goal>
+            </goals>
+        </action>
+        <action>
+            <actionName>run</actionName>
+            <packagings>
+                <packaging>jar</packaging>
+            </packagings>
+            <goals>
+                <goal>process-classes</goal>
+                <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
+            </goals>
+            <properties>
+                <exec.args>-classpath %classpath com.bodastage.boda_ericssoncnaiparser.BodaCNAIParser C:\Users\Emmanuel\Documents\Bodastage\code_repos\github\bts-ce\mediation\data\cm\ericsson\2g\raw\in C:\Users\Emmanuel\Documents\Bodastage\code_repos\github\bts-ce\mediation\data\cm\ericsson\2g\parsed\in C:\Users\Emmanuel\Documents\Bodastage\code_repos\github\bts-ce\mediation\conf\cm\eri_cm_2g_cnaiv2_parser.cfg</exec.args>
+                <exec.executable>java</exec.executable>
+            </properties>
+        </action>
+        <action>
+            <actionName>debug</actionName>
+            <packagings>
+                <packaging>jar</packaging>
+            </packagings>
+            <goals>
+                <goal>process-classes</goal>
+                <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
+            </goals>
+            <properties>
+                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath com.bodastage.boda_ericssoncnaiparser.BodaCNAIParser C:\Users\Emmanuel\Documents\Bodastage\code_repos\github\bts-ce\mediation\data\cm\ericsson\2g\raw\in C:\Users\Emmanuel\Documents\Bodastage\code_repos\github\bts-ce\mediation\data\cm\ericsson\2g\parsed\in C:\Users\Emmanuel\Documents\Bodastage\code_repos\github\bts-ce\mediation\conf\cm\eri_cm_2g_cnaiv2_parser.cfg</exec.args>
+                <exec.executable>java</exec.executable>
+                <jpda.listen>true</jpda.listen>
+            </properties>
+        </action>
+        <action>
+            <actionName>profile</actionName>
+            <packagings>
+                <packaging>jar</packaging>
+            </packagings>
+            <goals>
+                <goal>process-classes</goal>
+                <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
+            </goals>
+            <properties>
+                <exec.args>-classpath %classpath com.bodastage.boda_ericssoncnaiparser.BodaCNAIParser C:\Users\Emmanuel\Documents\Bodastage\code_repos\github\bts-ce\mediation\data\cm\ericsson\2g\raw\in C:\Users\Emmanuel\Documents\Bodastage\code_repos\github\bts-ce\mediation\data\cm\ericsson\2g\parsed\in C:\Users\Emmanuel\Documents\Bodastage\code_repos\github\bts-ce\mediation\conf\cm\eri_cm_2g_cnaiv2_parser.cfg</exec.args>
+                <exec.executable>java</exec.executable>
+            </properties>
+        </action>
+    </actions>
