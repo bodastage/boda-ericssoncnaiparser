@@ -26,4 +26,4 @@ Copyright (c) 2018 Bodastage Solutions(http://www.bodastage.com)
 ```
 
 # Requirements
-To run the jar file, you need Java version 1.6 and above.
+To run the jar file, you need Java version 1.8 and above.
