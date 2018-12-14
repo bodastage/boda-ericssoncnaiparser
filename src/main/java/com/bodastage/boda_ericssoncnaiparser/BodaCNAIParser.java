@@ -158,8 +158,7 @@ public class BodaCNAIParser
     private Boolean extractParametersOnly = false;
     
     /**
-     * Add meta fields to each MO.
-     * FILENAME,DATETIME,NE_TECHNOLOGY,NE_VENDOR,NE_VERSION,NE_TYPE 
+     * Add meta fields to each MO. FILENAME, DATETIME
      */
     private Boolean extractMetaFields = false;
     
@@ -480,9 +479,16 @@ public class BodaCNAIParser
                     return;
                 }
                 
-                String paramNames = "FileName";
+                String paramNames = "FILNAME";
                 String paramValues = cnaiExportFile;
 
+                //add utctime
+                //@TODO: Add mapping from configuration file
+                //for now call this varDateTime
+                paramNames = paramNames +",DATETIME";
+                paramValues = paramValues + "," + creationDateTime;    
+                
+                
                 //add capabilities
                 //When parameter file is present, only add if in parameter list
                 if( parameterFile == null || 
@@ -490,13 +496,6 @@ public class BodaCNAIParser
                     paramNames = paramNames +",capabilities";
                     paramValues = paramValues + "," + capabilities;                      
                 }
-
-                //add utctime
-                //@TODO: Add mapping from configuration file
-                //for now call this varDateTime
-                paramNames = paramNames +",varDateTime";
-                paramValues = paramValues + "," + creationDateTime;    
-                
 
                 //When parameter file is present, only add if in parameter list
                 //add Subnetwork
