@@ -20,6 +20,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Stack;
 import javax.xml.stream.XMLStreamException;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
 
 /**
  * Ericsson CNAI dump parser.
@@ -30,6 +37,12 @@ import javax.xml.stream.XMLStreamException;
  */
 public class BodaCNAIParser 
 {
+    /**
+     * Current release version 
+     * 
+     * Since 1.3.0
+     */
+    final static String VERSION = "2.0.0";
     
     /**
      * The CNAI dump file being parsed.
@@ -139,76 +152,205 @@ public class BodaCNAIParser
     static Map<String,Stack> domainColumnHeaders 
             = new LinkedHashMap<String, Stack>();
     
+    /**
+     * Extract managed objects and their parameters
+     */
+    private Boolean extractParametersOnly = false;
+    
+    /**
+     * Add meta fields to each MO. FILENAME, DATETIME
+     */
+    private Boolean extractMetaFields = false;
+    
+    public void setExtractParametersOnly(Boolean bool){
+        extractParametersOnly = bool;
+    }
+    
+    public void setExtractMetaFields(Boolean bool){
+        extractMetaFields = bool;
+    }
+    
+    public void setParameterFile(String filename){
+        parameterFile = filename;
+    }
+    
     public static void setFileName( String fileName ){
         //this.fileName = fileName;
     }
     
+    /**
+     * Set the output directory.
+     *
+     * @since 1.0.0
+     * @version 1.0.0
+     * @param directoryName
+     */
+    public void setOutputDirectory(String directoryName) {
+        this.outputDirectory = directoryName;
+    }
+    
+    /**
+     * Set name of file to parser.
+     *
+     * @since 1.0.1
+     * @version 1.0.0
+     * @param dataSource
+     */
+    public void setDataSource(String dataSource) {
+        this.dataSource = dataSource;
+    }
+    
     public static void main( String[] args )
     {
-        try{        
-            //show help
-            if( (args.length != 2 && args.length != 3) || (args.length == 1 && args[0] == "-h")){
-                showHelp();
-                System.exit(1);
+        
+       Options options = new Options();
+       CommandLine cmd = null;
+       String outputDirectory = null;   
+       String inputFile = null;
+       String parameterConfigFile = null;
+       Boolean onlyExtractParameters = false;
+       Boolean showHelpMessage = false;
+       Boolean showVersion = false;
+       Boolean attachMetaFields = false; //Attach mattachMetaFields FILENAME,DATETIME,NE_TECHNOLOGY,NE_VENDOR,NE_VERSION,NE_TYPE
+       
+       try{ 
+            options.addOption( "p", "extract-parameters", false, "extract only the managed objects and parameters" );
+            options.addOption( "v", "version", false, "display version" );
+            options.addOption( "m", "meta-fields", false, "add meta fields to extracted parameters. FILENAME,DATETIME" );
+            options.addOption( Option.builder("i")
+                    .longOpt( "input-file" )
+                    .desc( "input file or directory name")
+                    .hasArg()
+                    .argName( "INPUT_FILE" ).build());
+            options.addOption(Option.builder("o")
+                    .longOpt( "output-directory" )
+                    .desc( "output directory name")
+                    .hasArg()
+                    .argName( "OUTPUT_DIRECTORY" ).build());
+            options.addOption(Option.builder("c")
+                    .longOpt( "parameter-config" )
+                    .desc( "parameter configuration file")
+                    .hasArg()
+                    .argName( "PARAMETER_CONFIG" ).build() );
+            options.addOption( "h", "help", false, "show help" );
+            
+            //Parse command line arguments
+            CommandLineParser parser = new DefaultParser();
+            cmd = parser.parse( options, args);
+
+            if( cmd.hasOption("h")){
+                showHelpMessage = true;
             }
 
-            //Get bulk CM XML file to parse.
-            String filename = args[0];
-            outputDirectory = args[1];
-
-            //Confirm that the output directory is a directory and has write 
-            //privileges
-            File fOutputDir = new File(outputDirectory);
-            if(!fOutputDir.isDirectory()) {
-                System.err.println("ERROR: The specified output directory is not a directory!.");
-                System.exit(1);
-            }
-
-            if(!fOutputDir.canWrite()){
-                System.err.println("ERROR: Cannot write to output directory!");
-                System.exit(1);            
+            if( cmd.hasOption("v")){
+                showVersion = true;
             }
             
-            if(  args.length == 3  ){
-                File f = new File(args[2]);
-                if(f.isFile()){
-                   parameterFile = args[2];
-                   getParametersToExtract(parameterFile);
+            if(cmd.hasOption('o')){
+                outputDirectory = cmd.getOptionValue("o"); 
+            }
+            
+            if(cmd.hasOption('i')){
+                inputFile = cmd.getOptionValue("i"); 
+            }
+            
+            if(cmd.hasOption('c')){
+                parameterConfigFile = cmd.getOptionValue("c"); 
+            }
+            
+            if(cmd.hasOption('p')){
+                onlyExtractParameters  = true;
+            }
+            
+            if(cmd.hasOption('m')){
+                attachMetaFields  = true;
+            }
+            
+       }catch(IllegalArgumentException e){
+           
+       } catch (ParseException ex) {
+//            java.util.logging.Logger.getLogger(HuaweiCMObjectParser.class.getName()).log(Level.SEVERE, null, ex);
+        }
+       
+       
+        try{
+            
+            if(showVersion == true ){
+                System.out.println(VERSION);
+                System.out.println("Copyright (c) 2018 Bodastage Solutions(http://www.bodastage.com)");
+                System.exit(0);
+            }
+            
+            //show help
+            if( showHelpMessage == true || 
+                inputFile == null || 
+                ( outputDirectory == null && onlyExtractParameters == false) ){
+                     HelpFormatter formatter = new HelpFormatter();
+                     String header = "Parses Ericsson CNAIv2 configuration data file to csv\n\n";
+                     String footer = "\n";
+                     footer += "Examples: \n";
+                     footer += "java -jar boda-ericssoncnaiparser.jar -i cnaiv2_dump.xml -o out_folder\n";
+                     footer += "java -jar boda-ericssoncnaiparser.jar -i input_folder -o out_folder\n";
+                     footer += "java -jar boda-ericssoncnaiparser.jar -i input_folder -p\n";
+                     footer += "java -jar boda-ericssoncnaiparser.jar -i input_folder -p -m\n";
+                     footer += "\nCopyright (c) 2018 Bodastage Solutions(http://www.bodastage.com)";
+                     formatter.printHelp( "java -jar boda-ericssoncnaiparser.jar", header, options, footer );
+                     System.exit(0);
+            }
+        
+            //Confirm that the output directory is a directory and has write 
+            //privileges
+            if(outputDirectory != null ){
+                File fOutputDir = new File(outputDirectory);
+                if (!fOutputDir.isDirectory()) {
+                    System.err.println("ERROR: The specified output directory is not a directory!.");
+                    System.exit(1);
+                }
+
+                if (!fOutputDir.canWrite()) {
+                    System.err.println("ERROR: Cannot write to output directory!");
+                    System.exit(1);
                 }
             }
             
-            //Expiry check 
-            //@Remove this 
-            /**
-            Date expiryDate =  new GregorianCalendar(2018, Calendar.FEBRUARY, 01).getTime();
-            Date todayDate = new Date();  
-            //System.out.println(todayDate);
-            //System.out.println(expiryDate);
-            if(todayDate.after(expiryDate) ) {
-                System.out.println("Parser has expired. Please request new version from www.telecomhall.net");
-                System.exit(1);
+            
+
+            //Get parser instance
+            BodaCNAIParser cmParser = new BodaCNAIParser();
+
+
+            if(onlyExtractParameters == true ){
+                cmParser.setExtractParametersOnly(true);
             }
-            **/
             
-            cnaiExportFile = getFileBasename(filename);
-
+            if( attachMetaFields == true ){
+                cmParser.setExtractMetaFields(true);
+            }
             
-            dataSource = filename;
-            processFileOrDirectory(filename);
+            if(  parameterConfigFile != null ){
+                File f = new File(parameterConfigFile);
+                if(f.isFile()){
+                    cmParser.setParameterFile(parameterConfigFile);
+                    cmParser.getParametersToExtract(parameterConfigFile);
+                    cmParser.parserState = ParserStates.EXTRACTING_VALUES;
+                }
+            }
             
-//            BufferedReader br = new BufferedReader(new FileReader(filename));
-//            for(String line; (line = br.readLine()) != null; ) {
-//                processLine(line);
-//            }
-
+            cmParser.cnaiExportFile = cmParser.getFileBasename(filename); 
+            
+            cmParser.setDataSource(inputFile);
+            if(outputDirectory != null ) cmParser.setOutputDirectory(outputDirectory);
+            
+            cmParser.processFileOrDirectory(inputFile);
+            
+            cmParser.printExecutionTime();
+            cmParser.closeDomainPWMap();
         }catch(Exception e){
-            System.err.println("ERROR:" + e.getMessage());
-            e.printStackTrace();
-            System.exit(1);  
+            System.out.println(e.getMessage());
+            System.exit(1);
         }
-            
-        printExecutionTime();
-        closeDomainPWMap();
+
+
     }
     
     /**
@@ -337,9 +479,16 @@ public class BodaCNAIParser
                     return;
                 }
                 
-                String paramNames = "FileName";
+                String paramNames = "FILNAME";
                 String paramValues = cnaiExportFile;
 
+                //add utctime
+                //@TODO: Add mapping from configuration file
+                //for now call this varDateTime
+                paramNames = paramNames +",DATETIME";
+                paramValues = paramValues + "," + creationDateTime;    
+                
+                
                 //add capabilities
                 //When parameter file is present, only add if in parameter list
                 if( parameterFile == null || 
@@ -347,13 +496,6 @@ public class BodaCNAIParser
                     paramNames = paramNames +",capabilities";
                     paramValues = paramValues + "," + capabilities;                      
                 }
-
-                //add utctime
-                //@TODO: Add mapping from configuration file
-                //for now call this varDateTime
-                paramNames = paramNames +",varDateTime";
-                paramValues = paramValues + "," + creationDateTime;    
-                
 
                 //When parameter file is present, only add if in parameter list
                 //add Subnetwork
@@ -519,7 +661,7 @@ public class BodaCNAIParser
      * @version 1.0.0
      */
     static public void showHelp(){
-        System.out.println("boda-ericcsoncnaiparser 1.0.0. Copyright (c) 2017 Bodastage(http://www.bodastage.com)");
+        System.out.println("boda-ericcsoncnaiparser 1.0.0. Copyright (c) 2018 Bodastage(http://www.bodastage.com)");
         System.out.println("Parses Ericsson CNAI CP dumps to csv.");
         System.out.println("Usage: java -jar boda-ericssoncnaiparser.jar <fileToParse.dmp> <outputDirectory> <configFile>");
     }
@@ -575,8 +717,12 @@ public class BodaCNAIParser
      */
     public static String toCSVFormat(String s) {
         //First remove leading and trailing double quotes if any
-        s = s.replaceAll("^\"","");
-        s = s.replaceAll("\"$","");
+        //s = s.replaceAll("^\"","");
+        //s = s.replaceAll("\"$","");
+        
+        //s = s.replaceAll("^\"|\"$", "");
+        
+        s = s.replaceAll("^\"","").replaceAll("\"$","");
         
         String csvValue = s;
         
