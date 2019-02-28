@@ -4,8 +4,8 @@
   <groupId>com.bodastage.boda_ericssoncnaiparser</groupId>
   <artifactId>boda-ericssoncnaiparser</artifactId>
   <packaging>jar</packaging>
-  <version>1.0-SNAPSHOT</version>
-  <name>boda-ericssoncnaiparser</name>
+  <version>2.1.0-SNAPSHOT</version>
+  <name>boda-ericssoncnaiparser-pr</name>
   <url>http://maven.apache.org</url>
   <dependencies>
     <dependency>
