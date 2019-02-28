@@ -31,6 +31,25 @@ import org.apache.commons.cli.Option;
 /**
  * Ericsson CNAI dump parser.
  *
+* Below is the format of the CNAiV2 dump.
+ * 
+ * .set CELL1 
+ * .
+ * .
+ * .
+ * .set CELL1 PG 
+ * .set CELL1
+ * USERDATA="..."
+ * ---------------------------------//Section ends here
+ * .set CELL2 
+ * .
+ * .
+ * .
+ * .set CELL2 PG 
+ * .set CELL2
+ * USERDATA="..."
+ ---------------------------------//Section ends here
+ * 
  * @author Bodastage<info@bodastage.com>
  * @version 1.0.0
  * @see http://github.com/bodastage/boda-ericssoncnaiparser
@@ -42,7 +61,7 @@ public class BodaCNAIParser
      * 
      * Since 1.3.0
      */
-    final static String VERSION = "2.0.0";
+    final static String VERSION = "2.1.0";
     
     /**
      * The CNAI dump file being parsed.
@@ -216,7 +235,7 @@ public class BodaCNAIParser
        try{ 
             options.addOption( "p", "extract-parameters", false, "extract only the managed objects and parameters" );
             options.addOption( "v", "version", false, "display version" );
-            options.addOption( "m", "meta-fields", false, "add meta fields to extracted parameters. FILENAME,DATETIME" );
+//            options.addOption( "m", "meta-fields", false, "add meta fields to extracted parameters. FILENAME,DATETIME" );
             options.addOption( Option.builder("i")
                     .longOpt( "input-file" )
                     .desc( "input file or directory name")
@@ -277,7 +296,7 @@ public class BodaCNAIParser
             
             if(showVersion == true ){
                 System.out.println(VERSION);
-                System.out.println("Copyright (c) 2018 Bodastage Solutions(http://www.bodastage.com)");
+                System.out.println("Copyright (c) 2019 Bodastage Solutions(http://www.bodastage.com)");
                 System.exit(0);
             }
             
@@ -293,7 +312,7 @@ public class BodaCNAIParser
                      footer += "java -jar boda-ericssoncnaiparser.jar -i input_folder -o out_folder\n";
                      footer += "java -jar boda-ericssoncnaiparser.jar -i input_folder -p\n";
                      footer += "java -jar boda-ericssoncnaiparser.jar -i input_folder -p -m\n";
-                     footer += "\nCopyright (c) 2018 Bodastage Solutions(http://www.bodastage.com)";
+                     footer += "\nCopyright (c) 2019 Bodastage Solutions(http://www.bodastage.com)";
                      formatter.printHelp( "java -jar boda-ericssoncnaiparser.jar", header, options, footer );
                      System.exit(0);
             }
@@ -469,7 +488,73 @@ public class BodaCNAIParser
         if(line.contains(".set ")){            
             prevSet = set;
             set = line.replace(".set ", "");
+            return;
+        }
+        
+        //Get domain
+        if(line.contains(".domain")){
+            
+            //Get domain name
+            domain = line.replace(".domain ", "");
+            
+            //Skip the rest if the domain print writer has already been added.
+            if( domainPWMap.containsKey(domain) ){
+                return;
+            }
+        
+            //Create domain print writerr
+            String domainFile = outputDirectory + File.separatorChar + domain + ".csv";
+            try {
+                if( parameterFile == null || (parameterFile != null && domainColumnHeaders.containsKey(domain))){
+                    domainPWMap.put(domain, new PrintWriter(new File(domainFile)));
+                }
+                
+            } catch (FileNotFoundException e) {
+                //@TODO: Add logger
+                System.err.println(e.getMessage());
+                System.exit(1);
+            }
+            
+            //Mark domain header as not yet added
+            if(!domainHeaderAdded.containsKey(domain)){
+                domainHeaderAdded.put(domain, false);
+            }
+            return;
+        }
+        
+        //Get capabilities
+        if(line.contains("..capabilities")){
+            capabilities = line.replace("..capabilities ", "");       
+            return;
+        }
 
+        //Get subnetwork
+        if(line.contains(".subnetwork")){
+            subnetwork = line.replace(".subnetwork ", "");            
+            return;
+        }
+
+        //Get generation date and time
+        if(line.contains(".utctime")){
+            creationDateTime = line.replace(".utctime ", "");            
+            return;
+        }
+        
+        //Start collecting parameters and their values
+        String[] paramValuePair = line.split("=",2);
+
+        if ( paramValuePair.length != 2 ){
+            System.out.println("line:" + line );
+            return;
+        }
+
+        
+        //Get parameter value
+        domainParameterList.put(paramValuePair[0], paramValuePair[1]);
+        
+        //USERDATA make end of section
+        if(line.startsWith("USERDATA=")){
+            
             //Write parameter s from previous network entity to domain csv file.
             if( domainParameterList.size() > 1 ){
                 
@@ -589,70 +674,10 @@ public class BodaCNAIParser
                 domainParameterList.clear();
 
             }
-            return;
-        }
-        
-        //Get domain
-        if(line.contains(".domain")){
             
-            //Get domain name
-            domain = line.replace(".domain ", "");
-            
-            //Skip the rest if the domain print writer has already been added.
-            if( domainPWMap.containsKey(domain) ){
-                return;
-            }
-        
-            //Create domain print writerr
-            String domainFile = outputDirectory + File.separatorChar + domain + ".csv";
-            try {
-                if( parameterFile == null || (parameterFile != null && domainColumnHeaders.containsKey(domain))){
-                    domainPWMap.put(domain, new PrintWriter(new File(domainFile)));
-                }
-                
-            } catch (FileNotFoundException e) {
-                //@TODO: Add logger
-                System.err.println(e.getMessage());
-                System.exit(1);
-            }
-            
-            //Mark domain header as not yet added
-            if(!domainHeaderAdded.containsKey(domain)){
-                domainHeaderAdded.put(domain, false);
-            }
             return;
         }
         
-        //Get capabilities
-        if(line.contains("..capabilities")){
-            capabilities = line.replace("..capabilities ", "");       
-            return;
-        }
-
-        //Get subnetwork
-        if(line.contains(".subnetwork")){
-            subnetwork = line.replace(".subnetwork ", "");            
-            return;
-        }
-
-        //Get generation date and time
-        if(line.contains(".utctime")){
-            creationDateTime = line.replace(".utctime ", "");            
-            return;
-        }
-        
-        //Start collecting parameters and their values
-        String[] paramValuePair = line.split("=",2);
-
-        if ( paramValuePair.length != 2 ){
-            System.out.println("line:" + line );
-            return;
-        }
-        
-        if(paramValuePair[0].equals("set")){
-            System.out.println(line);
-        }
-        domainParameterList.put(paramValuePair[0], paramValuePair[1]);
     }
     /**
      * Show parser help.
