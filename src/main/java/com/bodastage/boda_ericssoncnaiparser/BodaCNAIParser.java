@@ -61,7 +61,7 @@ public class BodaCNAIParser
      * 
      * Since 1.3.0
      */
-    final static String VERSION = "2.1.0";
+    final static String VERSION = "2.2.0";
     
     /**
      * The CNAI dump file being parsed.
@@ -564,7 +564,7 @@ public class BodaCNAIParser
                     return;
                 }
                 
-                String paramNames = "FILNAME";
+                String paramNames = "FILENAME";
                 String paramValues = cnaiExportFile;
 
                 //add utctime
