@@ -61,7 +61,7 @@ public class BodaCNAIParser
      * 
      * Since 1.3.0
      */
-    final static String VERSION = "2.2.0";
+    final static String VERSION = "2.3.0";
     
     /**
      * The CNAI dump file being parsed.
@@ -181,6 +181,17 @@ public class BodaCNAIParser
      */
     private Boolean extractMetaFields = false;
     
+    /**
+     * Is the file being parsed CNAI v1
+     * 
+     * @since 2.3.0
+     */
+    public static Boolean isVersion1 = false;
+    
+    public void setIsVersion1( Boolean v1){
+        isVersion1 = v1;
+    }
+    
     public void setExtractParametersOnly(Boolean bool){
         extractParametersOnly = bool;
     }
@@ -221,7 +232,7 @@ public class BodaCNAIParser
     
     public static void main( String[] args )
     {
-        
+
        Options options = new Options();
        CommandLine cmd = null;
        String outputDirectory = null;   
@@ -231,7 +242,7 @@ public class BodaCNAIParser
        Boolean showHelpMessage = false;
        Boolean showVersion = false;
        Boolean attachMetaFields = false; //Attach mattachMetaFields FILENAME,DATETIME,NE_TECHNOLOGY,NE_VENDOR,NE_VERSION,NE_TYPE
-       
+       Boolean fileIsVersion1  = false;
        try{ 
             options.addOption( "p", "extract-parameters", false, "extract only the managed objects and parameters" );
             options.addOption( "v", "version", false, "display version" );
@@ -253,11 +264,17 @@ public class BodaCNAIParser
                     .argName( "PARAMETER_CONFIG" ).build() );
             options.addOption( "h", "help", false, "show help" );
             
+            options.addOption( "v1", "version1", false, "process cnai version 1" );
+            
             //Parse command line arguments
             CommandLineParser parser = new DefaultParser();
             cmd = parser.parse( options, args);
 
-            if( cmd.hasOption("h")){
+            if(cmd.hasOption("v1")){
+                fileIsVersion1 = true;
+            }
+            
+            if(cmd.hasOption("h")){
                 showHelpMessage = true;
             }
 
@@ -296,7 +313,7 @@ public class BodaCNAIParser
             
             if(showVersion == true ){
                 System.out.println(VERSION);
-                System.out.println("Copyright (c) 2019 Bodastage Solutions(http://www.bodastage.com)");
+                System.out.println("Copyright (c) 2020 Bodastage Solutions(https://www.bodastage.solutions)");
                 System.exit(0);
             }
             
@@ -312,7 +329,7 @@ public class BodaCNAIParser
                      footer += "java -jar boda-ericssoncnaiparser.jar -i input_folder -o out_folder\n";
                      footer += "java -jar boda-ericssoncnaiparser.jar -i input_folder -p\n";
                      footer += "java -jar boda-ericssoncnaiparser.jar -i input_folder -p -m\n";
-                     footer += "\nCopyright (c) 2019 Bodastage Solutions(http://www.bodastage.com)";
+                     footer += "\nCopyright (c) 2020 Bodastage Solutions(http://www.bodastage.com)";
                      formatter.printHelp( "java -jar boda-ericssoncnaiparser.jar", header, options, footer );
                      System.exit(0);
             }
@@ -338,12 +355,16 @@ public class BodaCNAIParser
             BodaCNAIParser cmParser = new BodaCNAIParser();
 
 
-            if(onlyExtractParameters == true ){
+            if(onlyExtractParameters){
                 cmParser.setExtractParametersOnly(true);
             }
             
-            if( attachMetaFields == true ){
+            if(attachMetaFields){
                 cmParser.setExtractMetaFields(true);
+            }
+            
+            if(fileIsVersion1){
+                cmParser.setIsVersion1(fileIsVersion1);
             }
             
             if(  parameterConfigFile != null ){
@@ -397,10 +418,36 @@ public class BodaCNAIParser
     
     public static void parse(String inputFilename) throws FileNotFoundException, IOException{
         BufferedReader br = new BufferedReader(new FileReader(inputFilename));
+        
+        //Parse CNAIV1
+        if(isVersion1){
+            parseCNAIVersion1File(inputFilename);
+            return;
+        }
+
         for(String line; (line = br.readLine()) != null; ) {
             processLine(line);
         }
     }
+    
+    public static void parseCNAIVersion1File(String inputFilename) throws FileNotFoundException, IOException{
+        BufferedReader br = new BufferedReader(new FileReader(inputFilename));
+        Integer lineCnt = 0;
+        String outFile = outputDirectory + File.separatorChar + getFileBasename(inputFilename) + ".csv";
+        
+        domainPWMap.put(inputFilename, new PrintWriter(new File(outFile)));
+        PrintWriter pw = domainPWMap.get(inputFilename);
+        for(String line; (line = br.readLine()) != null; ) {
+            lineCnt++;
+            
+            //skip 2nd line
+            if(lineCnt != 2) {
+                  pw.println(line.replaceAll("\\s", ","));
+            }
+
+        }
+    }
+    
     public static void processFileOrDirectory(String inputPath)
             throws FileNotFoundException, IOException {
         //this.dataFILe;

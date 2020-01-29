@@ -9,12 +9,11 @@ Parses Ericsson CNAIv2 configuration data file to csv
  -c,--parameter-config <PARAMETER_CONFIG>   parameter configuration file
  -h,--help                                  show help
  -i,--input-file <INPUT_FILE>               input file or directory name
- -m,--meta-fields                           add meta fields to extracted
-                                            parameters. FILENAME,DATETIME
  -o,--output-directory <OUTPUT_DIRECTORY>   output directory name
  -p,--extract-parameters                    extract only the managed
                                             objects and parameters
  -v,--version                               display version
+ -v1,--version1                             process cnai version 1
 
 Examples:
 java -jar boda-ericssoncnaiparser.jar -i cnaiv2_dump.xml -o out_folder
